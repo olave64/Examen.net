@@ -13,36 +13,30 @@ namespace appExamen.net
 
     public partial class Contenedor : Form
     {
-        String url = "http://localhost:3000/api/productos";
+        readonly CRUD crud = new CRUD(); 
         public Contenedor()
         {
             InitializeComponent();
         }
 
-       
 
-        private  void Contenedor_Load(object sender, EventArgs e)
+
+        private void Contenedor_Load(object sender, EventArgs e)
         {
-            actualizarDGV();
+            ActualizarDGV();
         }
 
-        private async void actualizarDGV() {
-            String respuesta = await GetHttp();
+        private async void ActualizarDGV()
+        {
+            String respuesta = await crud.GetHttp();
             List<Producto> listaProductos = JsonConvert.DeserializeObject<List<Producto>>(respuesta);
             DGVproductos.DataSource = listaProductos;
         }
-        public async Task<String> GetHttp()
-        {
-            WebRequest oRequest = WebRequest.Create(url);
-            WebResponse oResponse = oRequest.GetResponse();
-            StreamReader sr = new StreamReader(oResponse.GetResponseStream());
-            return await sr.ReadToEndAsync();
-        }
-
+       
         private void DGVproductos_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             int columnas = DGVproductos.ColumnCount;
-            StringBuilder sb = new StringBuilder();
+            //StringBuilder sb = new StringBuilder();
             String[] hhh = new string[columnas];
             int i = 0;
             foreach (DataGridViewCell item in DGVproductos.CurrentRow.Cells)
@@ -50,88 +44,94 @@ namespace appExamen.net
 
                 hhh[i] = item.FormattedValue.ToString();
                 //sb.Append(item.Value.ToString());
-               i++;
+                i++;
             }
-            //__________________________________
-
-
+            
             Id.Text = hhh[0];
             Nombre.Text = hhh[1];
             Cantidad.Text = hhh[2];
             Tipo.Text = hhh[3];
-            
+
 
         }
-        //----------------------ELIMINAR PRODUCTO------------------------\\
-        public async Task DeleteProducto(int id)
+
+       
+
+        private async void Nuevo_Click(object sender, EventArgs e)
         {
-            using (var deleteP = new HttpClient())
+
+            Id.Text = null;
+
+            try
             {
-                var response = await deleteP.DeleteAsync(url+"?id=" + id);
-                
+                string nombre = Nombre.Text;
+                int cantidad = int.Parse(Cantidad.Text);
+                string tipo = Tipo.Text;
+                if (nombre == "" || tipo == "")
+                {
+                    MessageBox.Show("Error los campos nombre, cantidad tipo son obligatorio");
+                }
+                else
+                {
+                    await crud.CrearProducto(nombre,cantidad,tipo);
+                    Resetear();
+                    ActualizarDGV();
+                }
             }
-        }
-
-
-        //-------------------------CREAR PRODUTO-------------------------\\
-
-        private static async Task<string> crearProducto(string url, string content)
-        {
-            var client = new HttpClient();
-            var response = await client.PostAsync(url, new StringContent(content));
-            var result = await response.Content.ReadAsStringAsync();
-            return result;
-        }
-
-        //-------------------------ACTUALIZAR PRODUCTO-----------------------\\
-        private static async Task<string> updateProducto(string url, string content)
-        {
-
-            var client = new HttpClient();
-            var response = await client.PutAsync(url, new StringContent(content));
-            var result = await response.Content.ReadAsStringAsync();
-            return result;
-        }
-
-        private async  void Nuevo_Click(object sender, EventArgs e)
-        {
-            string nombre = Nombre.Text;
-            int cantidad = int.Parse(Cantidad.Text);
-            string tipo = Tipo.Text;
-            await crearProducto(url+"?nombreP="+nombre+"&cantidadP="+cantidad+"&tipoP="+tipo, "");
-            actualizarDGV();
+            catch (Exception)
+            {
+                MessageBox.Show("Formato de valores incorrectos");
+            }
 
         }
 
         private async void Borrar_Click(object sender, EventArgs e)
         {
-            int id = int.Parse(Id.Text);
-            await DeleteProducto(id);
-            actualizarDGV();
+            try
+            {
+                int id = int.Parse(Id.Text);
+
+                DialogResult confirmacion = MessageBox.Show("Desea eliminar el producto con ID = "+id, "Confirmacion", MessageBoxButtons.YesNo);
+                if (confirmacion == DialogResult.Yes) {
+                    await crud.DeleteProducto(id);
+                    Resetear();
+                    ActualizarDGV();
+                }
+          
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("No hay un producto seleccionado");
+            }
+
         }
-
-
-        
 
         private async void Actualizar_Click(object sender, EventArgs e)
         {
-            try {
+            try
+            {
                 int id = int.Parse(Id.Text);
                 String nombre = Nombre.Text;
                 int cantidad = int.Parse(Cantidad.Text);
                 string tipo = Tipo.Text;
-                await updateProducto(url + "?id=" + id + "&nombreP=" + nombre + "&cantidadP=" + cantidad + "&tipoP=" + tipo, "");
-                actualizarDGV();
+                await crud.UpdateProducto(id,nombre,cantidad,nombre);
+                Resetear();
+                ActualizarDGV();
             }
-            catch(Exception)
+            catch (Exception)
             {
                 MessageBox.Show("No se a selecionado ningun producto");
-            
-            }    
+
+            }
 
         }
 
         private void Cancelar_Click(object sender, EventArgs e)
+        {
+            Resetear();
+        }
+
+        private void Resetear()
         {
             Id.Text = null;
             Nombre.Text = null;
@@ -140,8 +140,5 @@ namespace appExamen.net
         }
     }
 
-
-    
-
-    
 }
+
