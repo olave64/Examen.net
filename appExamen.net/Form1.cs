@@ -114,7 +114,7 @@ namespace appExamen.net
                 String nombre = Nombre.Text;
                 int cantidad = int.Parse(Cantidad.Text);
                 string tipo = Tipo.Text;
-                await crud.UpdateProducto(id,nombre,cantidad,nombre);
+                await crud.UpdateProducto(id,nombre,cantidad,tipo);
                 Resetear();
                 ActualizarDGV();
             }
